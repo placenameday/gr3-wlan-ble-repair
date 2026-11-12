@@ -29,7 +29,15 @@ def main():
     if stock[:128] != candidate[:128] or stock[-24:-12] != candidate[-24:-12]:
         raise ValueError("Container header or footer identity fields differ.")
 
+    stock_metadata = stock[stock_info["metadata_start"]:-24]
+    candidate_metadata = candidate[candidate_info["metadata_start"]:-24]
+    if candidate_metadata != stock_metadata:
+        raise ValueError("Container metadata differs.")
+
     def decode(data, info):
+        padding = data[info["payload_end"]:info["metadata_start"]]
+        if any(padding):
+            raise ValueError("Nonzero container alignment padding.")
         decoded, _ = decode_payload(data[128:info["payload_end"]], info["decoded_size"])
         if info["additive_sum32"] != 0 or sum32(decoded) != 0:
             raise ValueError("Container or decoded payload checksum failed.")
